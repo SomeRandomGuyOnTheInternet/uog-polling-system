@@ -12,25 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
 import { io } from 'socket.io-client';
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import BarChartRace from './BarChartRace';
 
 const SOCKET_URL = 'http://localhost:3001';
 const API_URL = 'http://localhost:3001';
@@ -111,39 +93,15 @@ function PollView({ poll, onBack, onError }) {
 
   const totalVotes = results.reduce((sum, option) => sum + (option.count || 0), 0);
 
-  const chartData = {
-    labels: activeQuestion.options.map(opt => opt.option_text),
-    datasets: [
-      {
-        label: 'Votes',
-        data: activeQuestion.options.map(opt => {
-          const result = results.find(r => r.id === opt.id);
-          return result ? result.count : 0;
-        }),
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          stepSize: 1,
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-  };
+  const chartData = activeQuestion.options.map(opt => {
+    const result = results.find(r => r.id === opt.id);
+    return {
+      id: opt.id,
+      label: opt.option_text,
+      count: result ? result.count : 0,
+      isCorrect: opt.is_correct
+    };
+  }).sort((a, b) => b.count - a.count); // Sort by count for racing effect
 
   return (
     <VStack spacing={6} align="stretch">
@@ -181,7 +139,11 @@ function PollView({ poll, onBack, onError }) {
 
         {(hasVoted || poll.isCreator) && (
           <Box height="300px" mb={6}>
-            <Bar data={chartData} options={chartOptions} />
+            <BarChartRace 
+              data={chartData}
+              width={800}
+              height={300}
+            />
           </Box>
         )}
 
