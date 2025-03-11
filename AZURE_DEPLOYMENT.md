@@ -41,8 +41,8 @@ git commit -m "Prepare for Azure deployment"
    - **Resource Group**: Create a new one or use an existing one
    - **Name**: Choose a unique name for your app (e.g., uog-polling-system)
    - **Publish**: Code
-   - **Runtime stack**: Node.js 18 LTS (or latest available)
-   - **Operating System**: Windows
+   - **Runtime stack**: Node.js 22 LTS (or latest available)
+   - **Operating System**: Linux
    - **Region**: Choose a region close to your location
    - **App Service Plan**: Create a new one or use an existing one (Free tier is sufficient for testing)
 5. Click "Review + create" and then "Create"
@@ -73,25 +73,43 @@ git push azure main
 6. Configure the build provider (Kudu/App Service Build Service)
 7. Click "Save"
 
-### 3. Configure Database
+### 3. Configure Linux-specific Settings
 
-Since this application uses SQLite, which is a file-based database, you need to ensure the database file is stored in a persistent location:
+Since you're deploying to a Linux-based App Service, you need to configure a few additional settings:
+
+1. In the Azure Portal, navigate to your App Service
+2. Go to "Configuration" in the left menu
+3. Add the following application settings:
+   - **Name**: WEBSITE_NODE_DEFAULT_VERSION
+   - **Value**: ~22 (or the version you selected during creation)
+   
+4. Add a startup command:
+   - Go to "Configuration" > "General settings"
+   - Set "Startup Command" to: `node server.js`
+
+### 4. Configure Database Persistence
+
+For SQLite database persistence on Linux App Service:
 
 1. In the Azure Portal, navigate to your App Service
 2. Go to "Configuration" in the left menu
 3. Add a new application setting:
-   - **Name**: WEBSITE_CONTENTSHARE
-   - **Value**: A unique name for your file share
+   - **Name**: SQLITE_DB_PATH
+   - **Value**: `/home/site/wwwroot/polls.db`
 
-This ensures that your SQLite database file will be stored in a persistent location.
+4. Update your server.js to use this path (if you haven't already):
+```javascript
+const dbPath = process.env.SQLITE_DB_PATH || 'polls.db';
+const db = new sqlite3.Database(dbPath);
+```
 
-### 4. Configure Environment Variables (if needed)
+### 5. Configure Environment Variables (if needed)
 
 1. In the Azure Portal, navigate to your App Service
 2. Go to "Configuration" in the left menu
 3. Add any necessary environment variables under "Application settings"
 
-### 5. Test Your Deployment
+### 6. Test Your Deployment
 
 1. Once deployment is complete, navigate to your app's URL (https://your-app-name.azurewebsites.net)
 2. Test the functionality to ensure everything is working correctly
@@ -104,7 +122,10 @@ If you encounter issues with your deployment:
    - Navigate to your App Service
    - Go to "Log stream" in the left menu
 
-2. Make sure your web.config file is correctly configured for Node.js applications
+2. For Linux-specific issues:
+   - Check the startup command is correctly set
+   - Verify file permissions (Linux is case-sensitive)
+   - Make sure paths use forward slashes (/)
 
 3. Verify that all dependencies are correctly listed in your package.json file
 

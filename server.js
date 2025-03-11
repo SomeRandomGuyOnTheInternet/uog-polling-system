@@ -22,10 +22,82 @@ app.use(cors({
 }));
 
 // Serve static files from the frontend build directory
+// Check multiple possible locations for the frontend files
+const possibleFrontendPaths = [
+    path.join(__dirname, 'frontend/dist'),
+    path.join(__dirname, 'dist'),
+    path.join(__dirname, '../frontend/dist'),
+    path.join(__dirname, '../dist')
+];
+
+// Find the first path that exists
+let frontendPath = possibleFrontendPaths[0]; // Default
+for (const testPath of possibleFrontendPaths) {
+    try {
+        if (fs.existsSync(testPath)) {
+            console.log(`Found frontend files at: ${testPath}`);
+            frontendPath = testPath;
+            break;
+        }
+    } catch (err) {
+        console.log(`Path not found: ${testPath}`);
+    }
+}
+
+app.use(express.static(frontendPath));
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const sqlite3 = require('sqlite3').verbose();
+const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const sqlite3 = require('sqlite3').verbose();
+const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
+// Serve static files from the frontend build directory
 app.use(express.static(path.join(__dirname, 'frontend/dist')));
 app.use(express.json());
 
-const db = new sqlite3.Database('polls.db');
+// Use environment variable for database path if provided (for Azure deployment)
+const dbPath = process.env.SQLITE_DB_PATH || 'polls.db';
+const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS polls (
