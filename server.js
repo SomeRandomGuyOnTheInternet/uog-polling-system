@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -45,54 +46,6 @@ for (const testPath of possibleFrontendPaths) {
 }
 
 app.use(express.static(frontendPath));
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const sqlite3 = require('sqlite3').verbose();
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
-
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
-
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const sqlite3 = require('sqlite3').verbose();
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
-
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
-
-// Serve static files from the frontend build directory
-app.use(express.static(path.join(__dirname, 'frontend/dist')));
 app.use(express.json());
 
 // Use environment variable for database path if provided (for Azure deployment)
@@ -280,7 +233,27 @@ app.put('/api/polls/:pollId/active-question', (req, res) => {
 
 // Catch-all route to serve the frontend for any other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+    // Try to find index.html in the frontend path
+    const indexPath = path.join(frontendPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        // If index.html is not found, try to find it in other possible locations
+        for (const testPath of possibleFrontendPaths) {
+            const testIndexPath = path.join(testPath, 'index.html');
+            try {
+                if (fs.existsSync(testIndexPath)) {
+                    console.log(`Found index.html at: ${testIndexPath}`);
+                    return res.sendFile(testIndexPath);
+                }
+            } catch (err) {
+                console.log(`index.html not found at: ${testIndexPath}`);
+            }
+        }
+        
+        // If index.html is not found anywhere, return a 404
+        res.status(404).send('Not found: index.html could not be located');
+    }
 });
 
 io.on('connection', (socket) => {
