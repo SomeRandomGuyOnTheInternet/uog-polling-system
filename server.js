@@ -4,17 +4,25 @@ const socketIo = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+
+// Serve static files from the frontend build directory
+app.use(express.static(path.join(__dirname, 'frontend/dist')));
 app.use(express.json());
 
 const db = new sqlite3.Database('polls.db');
@@ -196,6 +204,11 @@ app.put('/api/polls/:pollId/active-question', (req, res) => {
             }
         );
     });
+});
+
+// Catch-all route to serve the frontend for any other routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
 });
 
 io.on('connection', (socket) => {

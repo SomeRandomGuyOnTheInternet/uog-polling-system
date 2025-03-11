@@ -14,8 +14,9 @@ import { ArrowBackIcon } from '@chakra-ui/icons';
 import { io } from 'socket.io-client';
 import BarChartRace from './BarChartRace';
 
-const SOCKET_URL = 'http://localhost:3001';
-const API_URL = 'http://localhost:3001';
+// Use window.location.origin to dynamically determine the backend URL
+const SOCKET_URL = window.location.origin;
+const API_URL = window.location.origin;
 
 function PollView({ poll, onBack, onError }) {
   const [selectedOption, setSelectedOption] = useState(null);

@@ -12,7 +12,8 @@ import {
 } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
 
-const API_URL = 'http://localhost:3001';
+// Use window.location.origin to dynamically determine the backend URL
+const API_URL = window.location.origin;
 
 function JoinPoll({ onBack, onJoin, onError }) {
   const [joinCode, setJoinCode] = useState('');
